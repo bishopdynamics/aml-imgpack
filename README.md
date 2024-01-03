@@ -1,7 +1,7 @@
 aml-imgpack
 ===========
 
-Resource packer/unpacker for Amlogic Logo image files
+Resource packer/unpacker for Amlogic Logo image files, updated for python3 by bishopdynamics
 
 About bootup.bmp
 ----------------

@@ -1,6 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+"""
+Resource packer/unpacker for Amlogic Logo image files
+"""
+# pylint: disable=line-too-long,missing-class-docstring,missing-function-docstring,consider-using-f-string,invalid-name,broad-exception-raised,protected-access
 
-import sys
+from __future__ import annotations
+
 import struct
 import argparse
 import binascii
@@ -11,7 +16,7 @@ AML_RES_IMG_VERSION_V2 = 0x02
 AML_RES_IMG_ITEM_ALIGN_SZ = 16
 AML_RES_IMG_VERSION = 0x01
 AML_RES_IMG_V1_MAGIC_LEN = 8
-AML_RES_IMG_V1_MAGIC = "AML_RES!" # 8 chars
+AML_RES_IMG_V1_MAGIC = b'AML_RES!' # 8 chars
 AML_RES_IMG_HEAD_SZ = AML_RES_IMG_ITEM_ALIGN_SZ * 4 # 64
 AML_RES_ITEM_HEAD_SZ = AML_RES_IMG_ITEM_ALIGN_SZ * 4 # 64
 IH_MAGIC = 0x27051956 # Image Magic Number
@@ -51,7 +56,7 @@ class AmlResourcesImage(object):
         self.items = []
 
     @classmethod
-    def unpack_from(cls, fp):
+    def unpack_from(cls, fp) -> AmlResourcesImage:
         img = cls()
         fp.seek(0)
         img.header = AmlResImgHead.unpack_from(fp)
@@ -63,15 +68,15 @@ class AmlResourcesImage(object):
             fp.seek(item.next)
         return img
 
-    def pack(self):
-        packed = ""
+    def pack(self) -> bytes:
+        packed = bytes()
 
-        data_pack = ""
+        data_pack = bytes()
         for item in self.items:
             item.start = len(data_pack) + AmlResImgHead._size + (AmlResItem._size * len(self.items))
             item.size = len(item.data)
             data_pack += item.data
-            data_pack += struct.pack("%ds" % (len(data_pack) % self.header.alignSz), "\0" * self.header.alignSz)
+            data_pack += struct.pack("%ds" % (len(data_pack) % self.header.alignSz), b"\0" * self.header.alignSz)
 
         for i, item in enumerate(self.items):
             item.index = i
@@ -83,7 +88,7 @@ class AmlResourcesImage(object):
         return self.header.pack() + packed + data_pack
 
 
-class AmlResItem(object):
+class AmlResItem:
     _format = "IIIIIIIBBBB%ds" % IH_NMLEN
     _size = struct.calcsize(_format)
     magic = IH_MAGIC
@@ -101,9 +106,9 @@ class AmlResItem(object):
     data = ""
 
     @classmethod
-    def from_file(cls, file):
+    def from_file(cls, file) -> AmlResItem:
         item = cls()
-        with open(file) as fp:
+        with open(file, mode='br') as fp:
             item.data = fp.read()
         item.dcrc = binascii.crc32(item.data) & 0xFFFFFFFF
         item.size = len(item.data)
@@ -111,24 +116,22 @@ class AmlResItem(object):
         return item
 
     @classmethod
-    def unpack_from(cls, fp):
+    def unpack_from(cls, fp) -> AmlResItem:
         h = cls()
         h.magic, h.hcrc, h.size, h.start, h.end, h.next, h.dcrc, h.index, \
         h.nums, h.type, h.comp, h.name = struct.unpack(h._format, fp.read(h._size))
-        h.name = h.name.rstrip('\0')
+        h.name = h.name.rstrip(b'\0')
         if h.magic != IH_MAGIC:
-            raise Exception("Invalid item header magic, should 0x%x, is 0x%x" % \
-                (IH_MAGIC, h.magic))
+            raise Exception("Invalid item header magic, should 0x%x, is 0x%x" % (IH_MAGIC, h.magic))
         fp.seek(h.start)
         h.data = fp.read(h.size)
         return h
 
-    def pack(self):
-        return struct.pack(self._format, self.magic, self.hcrc, self.size, \
-            self.start, self.end, self.next, self.dcrc, self.index, self.nums,
-            self.type, self.comp, self.name)
+    def pack(self) -> bytes:
+        packed = struct.pack(self._format, self.magic, self.hcrc, self.size, self.start, self.end, self.next, self.dcrc, self.index, self.nums,self.type, self.comp, self.name.encode('utf-8'))
+        return packed
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AmlResItem(name=%s start=0x%x size=%d)" % (self.name, self.start, self.size)
 
 
@@ -144,53 +147,54 @@ class AmlResImgHead(object):
     reserv = ""
 
     @classmethod
-    def unpack_from(cls, fp):
+    def unpack_from(cls, fp) -> AmlResImgHead:
         h = cls()
-        h.crc, h.version, h.magic, h.imgSz, h.imgItemNum, h.alignSz, \
-        h.reserv = struct.unpack(h._format, fp.read(h._size))
+        h.crc, h.version, h.magic, h.imgSz, h.imgItemNum, h.alignSz, h.reserv = struct.unpack(h._format, fp.read(h._size))
         if h.magic != AML_RES_IMG_V1_MAGIC:
             raise Exception("Magic is not right, should %s, is %s" % (AML_RES_IMG_V1_MAGIC, h.magic))
         if h.version > AML_RES_IMG_VERSION_V2:
             raise Exception("res-img version %d not supported" % h.version)
         return h
 
-    def pack(self):
-        return struct.pack(self._format, self.crc, self.version, self.magic, \
-            self.imgSz, self.imgItemNum, self.alignSz, self.reserv)
+    def pack(self) -> bytes:
+        packed = struct.pack(self._format, self.crc, self.version, self.magic, self.imgSz, self.imgItemNum, self.alignSz, self.reserv.encode('utf-8'))
+        return packed
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AmlResImgHead(crc=0x%x version=%d imgSz=%d imgItemNum=%d alignSz=%d)" % \
             (self.crc, self.version, self.imgSz, self.imgItemNum, self.alignSz)
 
 
 
 def list_items(logo_img_file):
-    print "Listing assets in %s" % logo_img_file
-    with open(logo_img_file) as fp:
+    print("Listing assets in %s" % logo_img_file)
+    with open(logo_img_file, mode='rb') as fp:
         img = AmlResourcesImage.unpack_from(fp)
-        print img.header
+        print(img.header)
         for item in img.items:
-            print "    %s" % item
-        img.pack()
+            print("    %s" % item)
 
 
 def unpack_image_file(logo_img_file):
-    print "Unpacking assets in %s" % logo_img_file
-    with open(logo_img_file) as fp:
+    print("Unpacking assets in %s" % logo_img_file)
+    with open(logo_img_file, mode='rb') as fp:
         img = AmlResourcesImage.unpack_from(fp)
         for item in img.items:
-            print "  Unpacking %s" % item.name
-            with open("%s.bmp" % item.name, "w") as item_fp:
+            print("  Unpacking %s" % item.name.decode('utf-8'))
+            with open("%s.bmp" % item.name.decode('utf-8'), "wb") as item_fp:
                 item_fp.write(item.data)
 
 
 def pack_image_file(outfile, assets):
-    print "Packing files in %s:" % outfile
+    print("Packing files in %s:" % outfile)
     img = AmlResourcesImage()
-    img.items = map(AmlResItem.from_file, assets)
+    # img.items = map(AmlResItem.from_file, assets)
+    img.items = []
+    for asset in assets:
+        img.items.append(AmlResItem.from_file(asset))
     for item in img.items:
-        print "  %s (%d bytes)" % (item.name, item.size)
-    with open(outfile, "w") as fp:
+        print("  %s (%d bytes)" % (item.name, item.size))
+    with open(outfile, "wb") as fp:
         fp.write(img.pack())
 
 
