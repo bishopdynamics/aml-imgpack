@@ -135,7 +135,7 @@ class AmlResItem:
         return packed
 
     def __repr__(self) -> str:
-        return "AmlResItem(name=%s start=0x%x size=%d)" % (self.name, self.start, self.size)
+        return "AmlResItem(name=%s start=0x%x size=%d)" % (self.name.decode('utf-8'), self.start, self.size)
 
 
 class AmlResImgHead(object):
