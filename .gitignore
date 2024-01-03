@@ -58,3 +58,9 @@ target/
 *.dump
 dumps/
 *.bmp
+
+# stupid macos thumbnail files
+.DS_Store
+**/.DS_Store
+._DS_Store
+**/.DS_Store
