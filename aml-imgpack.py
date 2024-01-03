@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Resource packer/unpacker for Amlogic Logo image files
+    License: GPL-2.0
+    https://github.com/bishopdynamics/aml-imgpack
 """
 # pylint: disable=line-too-long,missing-class-docstring,missing-function-docstring,consider-using-f-string,invalid-name,broad-exception-raised,protected-access
 
@@ -10,6 +12,7 @@ import struct
 import argparse
 import binascii
 
+from pathlib import Path
 
 AML_RES_IMG_VERSION_V1 = 0x01
 AML_RES_IMG_VERSION_V2 = 0x02
@@ -106,13 +109,13 @@ class AmlResItem:
     data = ""
 
     @classmethod
-    def from_file(cls, file) -> AmlResItem:
+    def from_file(cls, file:Path) -> AmlResItem:
         item = cls()
         with open(file, mode='br') as fp:
             item.data = fp.read()
         item.dcrc = binascii.crc32(item.data) & 0xFFFFFFFF
         item.size = len(item.data)
-        item.name = file.replace(".bmp", "")
+        item.name = file.stem
         return item
 
     @classmethod
@@ -188,10 +191,9 @@ def unpack_image_file(logo_img_file):
 def pack_image_file(outfile, assets):
     print("Packing files in %s:" % outfile)
     img = AmlResourcesImage()
-    # img.items = map(AmlResItem.from_file, assets)
     img.items = []
     for asset in assets:
-        img.items.append(AmlResItem.from_file(asset))
+        img.items.append(AmlResItem.from_file(Path(asset)))
     for item in img.items:
         print("  %s (%d bytes)" % (item.name, item.size))
     with open(outfile, "wb") as fp:
