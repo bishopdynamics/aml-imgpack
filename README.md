@@ -3,10 +3,12 @@ aml-imgpack
 
 Resource packer/unpacker for Amlogic Logo image files, updated for python3
 
-About bootup.bmp
+Image Format
 ----------------
 
-Make sure you respect the original image sizes and depth, or else u-boot might get confused.
+Make sure you respect the original image depth, or else u-boot might get confused.
+
+Images will always be centered when shown on the screen, so you can make actual images only as large as necessary, however you cannot make images larger than the screen resolution.
 
 For instance, here are some example images from Spotify Car Thing (superbird):
 ```bash
@@ -21,8 +23,6 @@ upgrade_success.bmp:   PC bitmap, Windows 98/2000 and newer format, 480 x 800 x 
 upgrade_unfocus.bmp:   PC bitmap, Adobe Photoshop with alpha channel mask, 4 x 14 x 16, cbSize 184, bits offset 70
 upgrade_upgrading.bmp: PC bitmap, Adobe Photoshop with alpha channel mask, 300 x 300 x 16, cbSize 180072, bits offset 70
 ```
-
-Images will always be centered when shown on the screen, so you can make actual images only as large as necessary.
 
 You can see all images are 16bit. Using GIMP: File -> Export, Advanced Options, `16bits R5 G6 B5`.
 
